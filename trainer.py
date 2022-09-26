@@ -12,7 +12,8 @@ import sys
 
 class Trainer:
     def __init__(self, train_loader, dev_loader, test_loader, model: nn.Module, loss_fn, optimizer, scheduler, save_dir='.', display=100, eval=False, device='cuda', tensorboard=False, mode='both'):
-
+        #분모가 0을 방지
+        self.epsilon=1e-7
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
@@ -97,19 +98,22 @@ class Trainer:
                 batch_correct = sum(indices == y).item()
                  # 데이터 검증을 위한 임시 배열 추후 최적화 필요
 
-                TP, TN, FP, FN = 0, 0, 0, 0
-                for i in range(len(y)):
-                    if y[i] == 1 and indices[i] == 1:
-                        TP += 1
-                    elif y[i] == 0 and indices[i] == 0:
-                        TN += 1
-                    elif y[i] == 0 and indices[i] == 1:
-                        FP += 1
-                    elif y[i] == 1 and indices[i] == 0:
-                        FN += 1
-                    else:
-                        print("Error")
-
+                # TP, TN, FP, FN = 0, 0, 0, 0
+                # for i in range(len(y)):
+                #    if y[i] == 1 and indices[i] == 1:
+                #        TP += 1
+                #    elif y[i] == 0 and indices[i] == 0:
+                #        TN += 1
+                #    elif y[i] == 0 and indices[i] == 1:
+                #        FP += 1
+                #    elif y[i] == 1 and indices[i] == 0:
+                #        FN += 1
+                #    else:
+                #        print("Error")
+               
+                # y = F.one_hot(y, 2).to(torch.float32)
+                # indices = F.softmax(indices, dim=1)
+                
                 correct += batch_correct
                 display_correct += batch_correct
 
@@ -120,10 +124,17 @@ class Trainer:
                 if batch % self.display == 0:
                     display_loss = display_total_loss / display_total
                     display_acc = display_correct / display_total
-                    display_precision = TP / (TP + FP)
-                    display_recall = TP / (TP + FN)
 
-                    print(display_loss, display_acc, display_precision, display_recall)
+                    tp = (y * indices).sum(dim=0).to(torch.float32)
+                    tn = ((1 - y) * (1 - indices)).sum(dim=0).to(torch.float32)
+                    fp = ((1 - y) * indices).sum(dim=0).to(torch.float32)
+                    fn = (y * (1 - indices)).sum(dim=0).to(torch.float32)
+
+                    precision = tp / (tp + fp + self.epsilon)
+                    recall = tp / (tp + fn + self.epsilon)
+
+
+                    print(display_loss, display_acc, precision, recall)
                     # logging.info("Correct: {}".format(display_correct))
                     # logging.info("Total: {}".format(display_total))
                     logging.info("Finished {} / {} batches with loss: {}, accuracy {}"
@@ -136,14 +147,14 @@ class Trainer:
                         self.writer.add_scalar(
                             'Train Batch Acc', display_acc, total_batch)
                         self.writer.add_scalar(
-                            'Train Batch Precision', display_precision, total_batch)
+                            'Train Batch Precision', precision, total_batch)
                         self.writer.add_scalar(
-                            'Train Batch Recall', display_recall, total_batch)
+                            'Train Batch Recall', recall, total_batch)
 
                     display_correct = 0
                     display_total = 0
                     display_total_loss = 0
-                   
+              
 
             logging.info("=============Iteration {}=============".format(idx_iter))
             logging.info("Training accuracy {}".format(correct / total))

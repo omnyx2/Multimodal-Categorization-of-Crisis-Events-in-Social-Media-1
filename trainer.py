@@ -114,6 +114,7 @@ class Trainer:
                 # y = F.one_hot(y, 2).to(torch.float32)
                 # indices = F.softmax(indices, dim=1)
                 
+
                 correct += batch_correct
                 display_correct += batch_correct
 
@@ -134,7 +135,7 @@ class Trainer:
                     recall = tp / (tp + fn + self.epsilon)
 
 
-                    print(display_loss, display_acc, precision, recall)
+                    print(display_loss, display_acc, display_precision, display_recall)
                     # logging.info("Correct: {}".format(display_correct))
                     # logging.info("Total: {}".format(display_total))
                     logging.info("Finished {} / {} batches with loss: {}, accuracy {}"

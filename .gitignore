@@ -1,6 +1,9 @@
 __pycache__
 experiment.ipynb
 datasets/*
+output/%
+prediction.csv
 results
 misclass
 output
+prediction_with_no_sse.csv
